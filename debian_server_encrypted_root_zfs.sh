@@ -1839,6 +1839,10 @@ remote_zbm_access_container_Func(){
 							return 1
 						fi
 
+						##The start hook timestamps its log lines with date, which the minimal initramfs lacks
+						##unless installed here. Optional (-o) so a missing binary can't fail the whole build.
+						inst_multiple -o date
+
 						inst_dir /etc/tor
 						inst_dir /var/lib/tor/hidden_service/authorized_clients
 						inst /build/tor/hidden_service/hs_ed25519_secret_key /var/lib/tor/hidden_service/hs_ed25519_secret_key
@@ -1877,11 +1881,12 @@ remote_zbm_access_container_Func(){
 						sleep $remoteaccess_tor_start_delay
 						if [ -x /sbin/tor ];
 						then
-							echo "\$(date): tor binary found, starting after ${remoteaccess_tor_start_delay}s delay." >> /tmp/tor-onion-hook.log
+							echo "\$(date 2>/dev/null || echo "?"): tor binary found, starting after ${remoteaccess_tor_start_delay}s delay." >> /tmp/tor-onion-hook.log
 							/sbin/tor -f /etc/tor/torrc --RunAsDaemon 1 >> /tmp/tor-onion-hook.log 2>&1
-							echo "\$(date): tor start command exited with status \$?." >> /tmp/tor-onion-hook.log
+							tor_status=\$?
+							echo "\$(date 2>/dev/null || echo "?"): tor start command exited with status \$tor_status." >> /tmp/tor-onion-hook.log
 						else
-							echo "\$(date): /sbin/tor not found or not executable -- the 70tor dracut module did not install it correctly." >> /tmp/tor-onion-hook.log
+							echo "\$(date 2>/dev/null || echo "?"): /sbin/tor not found or not executable -- the 70tor dracut module did not install it correctly." >> /tmp/tor-onion-hook.log
 						fi
 					) &
 				STARTHOOK
