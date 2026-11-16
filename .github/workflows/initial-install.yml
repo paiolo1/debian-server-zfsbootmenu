@@ -31,7 +31,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ##inputs.profile is empty outside workflow_dispatch, so those runs fall through to all profiles.
         ##A single chosen profile, else all of them (inputs.profile is empty outside workflow_dispatch).
         profile: ${{ fromJSON(inputs.profile && inputs.profile != 'all' && format('["{0}"]', inputs.profile) || '["simple","mirror","raid0","raidz1","raidz2","raidz3"]') }}   # one entry per file in ci/profiles/
     steps:
