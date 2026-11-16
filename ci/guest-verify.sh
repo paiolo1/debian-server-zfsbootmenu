@@ -76,12 +76,15 @@ else
 	fi
 fi
 
-if [ "$topology_root" = "mirror" ]; then
+if [ "$topology_root" != "single" ]; then
 	status="$(zpool status "$RPOOL" 2>&1)"
-	check "root vdev is a mirror" grep -q "mirror-0" <<<"$status"
+	##raid0 is a plain stripe, so zpool status shows no vdev header for it.
+	case "$topology_root" in
+		mirror|raidz1|raidz2|raidz3) check "root vdev is ${topology_root}" grep -q "${topology_root}-0" <<<"$status" ;;
+	esac
 	while read -r id; do
 		[ -n "$id" ] || continue
-		check "mirror member present: ${id}" grep -q "${id}" <<<"$status"
+		check "${topology_root} member present: ${id}" grep -q "${id}" <<<"$status"
 		check "partition 1 is an EFI System Partition on ${id}" \
 			sh -c "sgdisk -i1 '/dev/disk/by-id/${id}' | grep -qi 'C12A7328-F81F-11D2-BA4B-00A0C93EC93B'"
 	done < <(printf '%s\n' "$disks_root_ids" | tr -d '[:blank:]')

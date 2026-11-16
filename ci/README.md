@@ -22,7 +22,7 @@ A profile (`ci/profiles/<name>.sh`) is a few variable overrides. `gen-env.sh` bu
 generated admin SSH key, then the profile. It fails if any name in `ENV_VAR_ORDER` ends up
 undefined. `CI_RAM_MB`, `CI_DISK_GB`, `CI_ISO_BASE` are harness settings. A profile with several
 `disks_root_ids` lines (all `virtio-<serial>`) gets that many virtual disks. To add a config,
-copy `simple.sh` and add its name to the workflow matrix and to the `workflow_dispatch` profile options.
+copy `simple.sh` and add its name to the workflow matrix and to the `workflow_dispatch` profile options. Profiles: `simple`, `mirror` (2 disks), `raid0` (2), `raidz1` (3), `raidz2` (4), `raidz3` (5).
 
 ## Running locally
 

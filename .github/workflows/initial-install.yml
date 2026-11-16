@@ -11,7 +11,7 @@ on:
         description: Which profile to run (scheduled and pull request runs always run all)
         type: choice
         default: all
-        options: [all, simple, mirror]   # all, plus one entry per file in ci/profiles/
+        options: [all, simple, mirror, raid0, raidz1, raidz2, raidz3]   # all, plus one entry per file in ci/profiles/
   schedule:
     - cron: "17 3 * * *"
   pull_request:
@@ -32,7 +32,8 @@ jobs:
       fail-fast: false
       matrix:
         ##inputs.profile is empty outside workflow_dispatch, so those runs fall through to all profiles.
-        profile: ${{ fromJSON(inputs.profile == 'simple' && '["simple"]' || inputs.profile == 'mirror' && '["mirror"]' || '["simple","mirror"]') }}   # one entry per file in ci/profiles/
+        ##A single chosen profile, else all of them (inputs.profile is empty outside workflow_dispatch).
+        profile: ${{ fromJSON(inputs.profile && inputs.profile != 'all' && format('["{0}"]', inputs.profile) || '["simple","mirror","raid0","raidz1","raidz2","raidz3"]') }}   # one entry per file in ci/profiles/
     steps:
       - uses: actions/checkout@v4
 
