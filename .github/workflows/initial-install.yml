@@ -6,6 +6,12 @@ name: initial-install
 ##script or harness -- not on every push. See ci/README.md.
 on:
   workflow_dispatch:
+    inputs:
+      profile:
+        description: Which profile to run (scheduled and pull request runs always run all)
+        type: choice
+        default: all
+        options: [all, simple, mirror]   # all, plus one entry per file in ci/profiles/
   schedule:
     - cron: "17 3 * * *"
   pull_request:
@@ -25,7 +31,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        profile: [simple, mirror]   # one entry per file in ci/profiles/
+        ##inputs.profile is empty outside workflow_dispatch, so those runs fall through to all profiles.
+        profile: ${{ fromJSON(inputs.profile == 'simple' && '["simple"]' || inputs.profile == 'mirror' && '["mirror"]' || '["simple","mirror"]') }}   # one entry per file in ci/profiles/
     steps:
       - uses: actions/checkout@v4
 
