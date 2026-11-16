@@ -143,6 +143,22 @@ file_in /etc/crypttab
 ##sanoid and the apt snapshot hook are installed by "postreboot", not "initial", so aren't checked here.
 check "a systemd-networkd .network file exists" \
 	sh -c "ls '${verify_root}'/etc/systemd/network/10-*.network"
+net_file="$(ls "${verify_root}"/etc/systemd/network/10-*.network 2>/dev/null | head -n 1)"
+net_file="${net_file#"${verify_root}"}"
+if [ "${remoteaccess_ip_config-}" = "static" ]; then
+	##Expected prefix length for the profile's netmask: count the set bits.
+	expected_prefix=0
+	IFS=. read -r nm_a nm_b nm_c nm_d <<< "$remoteaccess_netmask"
+	for nm_octet in "$nm_a" "$nm_b" "$nm_c" "$nm_d"; do
+		while [ "$nm_octet" -gt 0 ]; do expected_prefix=$((expected_prefix + (nm_octet & 1))); nm_octet=$((nm_octet >> 1)); done
+	done
+	contains "$net_file" "DHCP=no"
+	contains "$net_file" "Address=${remoteaccess_ip}/${expected_prefix}"
+	contains "$net_file" "Gateway=${remoteaccess_gateway}"
+	contains "$net_file" "DNS=${remoteaccess_gateway}"
+else
+	contains "$net_file" "DHCP=yes"
+fi
 
 if [ -n "$zfs_root_password" ]; then
 	file_in "/etc/zfs/${RPOOL}.key"

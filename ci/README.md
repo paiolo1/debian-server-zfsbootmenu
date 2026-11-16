@@ -10,7 +10,7 @@ What is checked (`guest-verify.sh`, run in the guest straight after `initial`):
 - `rpool` is exported, nothing is mounted under `$mountpoint`, and `zpool import` lists it (if `initial` could not export it, that is only a warning and the pool is verified in place)
 - it re-imports **without `-f`** and (if encrypted) unlocks with the generated passphrase
 - dataset layout and properties, `bootfs`, compression, ashift
-- files in the new root (networkd, zbm config, initramfs key hook,
+- files in the new root (networkd, which is DHCP or, with `remoteaccess_ip_config=static`, the static address/prefix/gateway/DNS; zbm config, initramfs key hook,
   user/ssh files, the copied script and `.env`, install log) and their modes
 - the EFI partition: type, label, rEFInd, `refind_linux.conf`, the zfsbootmenu image, NVRAM entry
 - the pool exports cleanly again afterwards
@@ -22,7 +22,7 @@ A profile (`ci/profiles/<name>.sh`) is a few variable overrides. `gen-env.sh` bu
 generated admin SSH key, then the profile. It fails if any name in `ENV_VAR_ORDER` ends up
 undefined. `CI_RAM_MB`, `CI_DISK_GB`, `CI_ISO_BASE` are harness settings. A profile with several
 `disks_root_ids` lines (all `virtio-<serial>`) gets that many virtual disks. To add a config,
-copy `simple.sh` and add its name to the workflow matrix and to the `workflow_dispatch` profile options. Profiles: `simple`, `mirror` (2 disks), `raid0` (2), `raidz1` (3), `raidz2` (4), `raidz3` (5).
+copy `simple.sh` and add its name to the workflow matrix and to the `workflow_dispatch` profile options. Profiles: `simple`, `static` (static IP for the installed system), `mirror` (2 disks), `raid0` (2), `raidz1` (3), `raidz2` (4), `raidz3` (5).
 
 ## Running locally
 
