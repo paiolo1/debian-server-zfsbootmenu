@@ -305,6 +305,9 @@ behind, so this is only needed to make a bump permanent rather than one-off.
   `deb.debian.org` is already geo-routed, so `mirror_archive_url` is a plain optional override instead.
 - **Networking**: `systemd-networkd` (a plain DHCP `.network` file) instead of `netplan`, since Debian's base
   install has neither netplan nor NetworkManager.
+  With `remoteaccess_ip_config="static"`, the installed system reuses the same `remoteaccess_ip`,
+  `remoteaccess_netmask` and `remoteaccess_gateway` (the gateway doubles as DNS server), so the address doesn't
+  change when zfsbootmenu hands over to Debian. Any other `remoteaccess_ip_config` value leaves it on DHCP.
 - **Packages**: `linux-image-amd64`/`linux-headers-amd64` instead of `-generic`; `tasksel install standard`
   instead of the `ubuntu-server` metapackage; no desktop-flavour variants (KDE/Xfce/etc).
 - **Groups**: dropped Ubuntu/snap-specific `lxd` and `lpadmin` groups.

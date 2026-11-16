@@ -81,6 +81,31 @@ onion_public_key_is_valid(){
 	onion_key_file_is_valid "$1" 64 '== ed25519v1-public: type0 =='
 }
 
+netmask_to_prefix(){
+	##Prints the CIDR prefix length for a dotted-quad netmask; returns 1 if it isn't a contiguous mask.
+	nm_bits=0
+	nm_seen_partial=0
+	IFS=. read -r nm_a nm_b nm_c nm_d nm_extra <<< "$1"
+	[ -z "${nm_extra-}" ] && [ -n "${nm_d-}" ] || return 1
+	for nm_octet in "$nm_a" "$nm_b" "$nm_c" "$nm_d";
+	do
+		[ "$nm_seen_partial" -eq 0 ] || { [ "$nm_octet" = "0" ] || return 1; continue; }
+		case "$nm_octet" in
+			255) nm_bits=$((nm_bits + 8)) ;;
+			254) nm_bits=$((nm_bits + 7)); nm_seen_partial=1 ;;
+			252) nm_bits=$((nm_bits + 6)); nm_seen_partial=1 ;;
+			248) nm_bits=$((nm_bits + 5)); nm_seen_partial=1 ;;
+			240) nm_bits=$((nm_bits + 4)); nm_seen_partial=1 ;;
+			224) nm_bits=$((nm_bits + 3)); nm_seen_partial=1 ;;
+			192) nm_bits=$((nm_bits + 2)); nm_seen_partial=1 ;;
+			128) nm_bits=$((nm_bits + 1)); nm_seen_partial=1 ;;
+			0) nm_seen_partial=1 ;;
+			*) return 1 ;;
+		esac
+	done
+	printf '%s' "$nm_bits"
+}
+
 onion_hostname_is_valid(){
 	##A v3 address is 56 base32 characters (public key, checksum and version byte) plus ".onion".
 	printf '%s' "$1" | grep -Eq '^[a-z2-7]{56}\.onion$'
@@ -193,6 +218,13 @@ verify_env(){
 		initial)
 			[ -n "${debianver-}" ] || env_error "debianver is not set."
 			[ -n "${ethprefix-}" ] || env_error "ethprefix is not set."
+			if [ "${remoteaccess_ip_config-}" = "static" ];
+			then
+				##The installed system reuses the zfsbootmenu static address (see the networkd file below).
+				[ -n "${remoteaccess_ip-}" ] || env_error "remoteaccess_ip_config is \"static\" but remoteaccess_ip is not set."
+				[ -n "${remoteaccess_gateway-}" ] || env_error "remoteaccess_ip_config is \"static\" but remoteaccess_gateway is not set."
+				netmask_to_prefix "${remoteaccess_netmask-}" >/dev/null || env_error "remoteaccess_netmask=\"${remoteaccess_netmask-}\" is not a valid dotted-quad netmask (e.g. 255.255.255.0)."
+			fi
 			disk_ids_count_check "root"
 		;;
 		datapool)
@@ -2109,6 +2141,15 @@ systemsetupFunc_part1(){
 		[Network]
 		DHCP=yes
 	EOF
+	if [ "${remoteaccess_ip_config-}" = "static" ];
+	then
+		##Same address as zfsbootmenu's pre-boot network, so the server doesn't change IP when it hands over to
+		##Debian. The gateway doubles as DNS server, as on most home/LAN routers.
+		os_static_prefix="$(netmask_to_prefix "$remoteaccess_netmask")"
+		printf '[Match]\nName=%s\n\n[Network]\nDHCP=no\nAddress=%s/%s\nGateway=%s\nDNS=%s\n' \
+			"$ethernetinterface" "$remoteaccess_ip" "$os_static_prefix" "$remoteaccess_gateway" "$remoteaccess_gateway" \
+			> "$mountpoint"/etc/systemd/network/10-"$ethernetinterface".network
+	fi
 	chmod 644 "$mountpoint"/etc/systemd/network/10-"$ethernetinterface".network
 
 	mount --make-private --rbind /dev  "$mountpoint"/dev
