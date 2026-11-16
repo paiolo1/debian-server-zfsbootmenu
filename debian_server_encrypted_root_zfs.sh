@@ -2083,6 +2083,14 @@ remote_zbm_access_container_Func(){
 	##Remote unlock is only reachable while ZFSBootMenu is still on screen, so the countdown that is
 	##fine for an unattended local boot is too short to connect within -- over Tor, the client alone
 	##needs tens of seconds to bootstrap before it can even reach the service.
+	##Installs from before the install stage named the entry exactly only have the broad "EFI/debian" match.
+	refind_main_conf=/boot/efi/EFI/refind/refind.conf
+	if [ -f "$refind_main_conf" ] && grep -q '^default_selection "EFI/debian"$' "$refind_main_conf";
+	then
+		sed -i 's,^default_selection "EFI/debian"$,default_selection "EFI/debian/vmlinuz-bootmenu",' "$refind_main_conf"
+		echo "rEFInd default_selection narrowed to EFI/debian/vmlinuz-bootmenu in ${refind_main_conf}."
+	fi
+
 	refind_conf=/boot/efi/EFI/debian/refind_linux.conf
 	if [ -f "$refind_conf" ];
 	then
@@ -2301,7 +2309,9 @@ systemsetupFunc_part3(){
 
 		sed -i 's,^timeout .*,timeout $timeout_rEFInd,' /boot/efi/EFI/refind/refind.conf
 
-		echo 'default_selection "EFI/debian"' >> /boot/efi/EFI/refind/refind.conf
+		##Name the zfsbootmenu kernel itself: a bare "EFI/debian" substring-matches every loader in that
+		##directory, so rEFInd could pick another image there (e.g. vmlinuz.efi) that ignores refind_linux.conf.
+		echo 'default_selection "EFI/debian/vmlinuz-bootmenu"' >> /boot/efi/EFI/refind/refind.conf
 
 		echo REMAKE_INITRD=yes > /etc/dkms/zfs.conf
 		sed -i 's,LOAD_KEXEC=false,LOAD_KEXEC=true,' /etc/default/kexec
