@@ -207,7 +207,7 @@ if mount -o ro "$esp" "${verify_root}/boot/efi"; then
 	pass "mounted ESP"
 	file_in /boot/efi/EFI/refind/refind_x64.efi
 	file_in /boot/efi/EFI/refind/refind.conf
-	contains /boot/efi/EFI/refind/refind.conf 'default_selection "EFI/debian"'
+	contains /boot/efi/EFI/refind/refind.conf 'default_selection "EFI/debian/vmlinuz-bootmenu"'
 	file_in /boot/efi/EFI/debian/refind_linux.conf
 	contains /boot/efi/EFI/debian/refind_linux.conf "zbm.timeout=${timeout_zbm_no_remote_access}"
 	check "zfsbootmenu image present in EFI/debian (>1MB)" \
